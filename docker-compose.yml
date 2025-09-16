@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  flutter-web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: namkhapham/ev-management-sales:latest
+
+    container_name: ev-management-sales
+    ports:
+      - "80:80"
+    restart: always
