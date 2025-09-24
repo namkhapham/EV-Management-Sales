@@ -1,68 +1,30 @@
-name: Flutter Web CI/CD Pipeline
+name: CI/CD Deploy to Render
 
 on:
   push:
     branches:
-      - main
+      - main   # chạy khi bạn push code lên branch main
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
 
     steps:
-      # 1️⃣ Checkout source code
+      # Bước 1: Checkout source code
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
-      # 2️⃣ Set up Flutter cache
-      - name: Cache Flutter SDK
-        uses: actions/cache@v4
-        with:
-          path: ~/.flutter
-          key: flutter-${{ runner.os }}-sdk
-          restore-keys: |
-            flutter-${{ runner.os }}-sdk
-
-      # 3️⃣ Install dependencies
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y curl unzip xz-utils git libglu1-mesa
-          git clone https://github.com/flutter/flutter.git -b stable ~/.flutter
-          export PATH="$HOME/.flutter/bin:$HOME/.flutter/bin/cache/dart-sdk/bin:$PATH"
-          flutter config --enable-web
-          flutter pub get
-
-      # 4️⃣ Build Flutter Web
-      - name: Build Flutter Web
-        run: |
-          export PATH="$HOME/.flutter/bin:$HOME/.flutter/bin/cache/dart-sdk/bin:$PATH"
-          flutter build web --release
-
-      # 5️⃣ Login Docker Hub
-      - name: Login Docker Hub
-        uses: docker/login-action@v3
+      # Bước 2: Đăng nhập DockerHub
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      # 6️⃣ Build and push Docker image
-      - name: Build and push Docker image
-        run: |
-          docker build -t namkhapham/ev-management-sales:latest .
-          docker push namkhapham/ev-management-sales:latest
+      # Bước 3: Build Docker image
+      - name: Build Docker image
+        run: docker build -t ${{ secrets.DOCKER_USERNAME }}/ev-management-sales:latest .
 
-      # 7️⃣ Deploy to server via SSH
-      - name: Deploy to server
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USERNAME }}
-          key: ${{ secrets.SERVER_SSH_KEY }}
-          script: |
-            echo "${{ secrets.DOCKER_COMPOSE_FILE }}" > docker-compose.yml
-            docker-compose pull
-            docker-compose up -d
+      # Bước 4: Push Docker image lên DockerHub
+      - name: Push Docker image
+        run: docker push ${{ secrets.DOCKER_USERNAME }}/ev-management-sales:latest
